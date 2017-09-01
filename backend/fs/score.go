@@ -14,8 +14,9 @@ func Score(d []byte) tall.HexBytes {
 }
 
 func ScoreFrom(r io.Reader) <-chan tall.HexBytes {
-	ch := make(chan tall.HexBytes, 1)
+	ch := make(chan tall.HexBytes)
 	go func() {
+		defer close(ch)
 		hash := sha256.New()
 		io.Copy(hash, r)
 		hexstring := hex.EncodeToString(hash.Sum(nil))

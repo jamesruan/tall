@@ -1,14 +1,26 @@
 package tall
 
 import (
+	"io"
 	"log"
 )
 
+type Reader interface {
+	io.ReadSeeker
+	io.ReaderAt
+	io.Closer
+}
+
+type Writer interface {
+	io.Writer
+	Commit() (score HexBytes, err error)
+}
+
 // backend should implement following interface
 type Backend interface {
-	Score(data []byte) (score HexBytes) // calculate score for `data`
-	Store(data []byte) (score HexBytes, err error)
-	Load(score HexBytes) (data []byte, err error)
+	Score(data []byte) (score HexBytes)      // calculate score for `data`
+	Open(score HexBytes) (Reader, err error) // open a storage for read, call Close() to close it.
+	Create() (Writer, err error)             // create a new storage to write, call Commit() to finalize it.
 	Has(score HexBytes) (ok bool, err error)
 	SetLogger(logger *log.Logger, debug bool) //operations are logged if debug is true, or else only backend running errors logged.
 }

@@ -20,9 +20,6 @@ const (
 
 type SuperMeta struct {
 	Level int
-	Dirty bool
-	Count int64
-	Size  int64
 }
 
 func (s *SuperMeta) Store(f *os.File) (err error) {
@@ -40,20 +37,23 @@ type FSWriteAgent struct {
 	w        io.Writer
 	pw       io.WriteCloser
 	pr       io.ReadCloser
-	score    tall.HexBytes
+}
+
+type FSReadAgent struct {
+	*os.File
 }
 
 func (f *FSWriteAgent) Write(data []byte) (int, error) {
 	return f.w.Write(data)
 }
 
-func (f *FSWriteAgent) Close() (err error) {
+func (f *FSWriteAgent) Commit() (score tall.HexBytes, err error) {
 	defer f.tempfile.Close()
 	f.pw.Close()
 	f.pr.Close()
 
-	f.score = <-f.sch
-	path := filepath.Join(f.b.entry, scoreToPath(f.score, f.b.sm.Level))
+	score = <-f.sch
+	path := filepath.Join(f.b.entry, scoreToPath(score, f.b.sm.Level))
 	basepath := filepath.Base(path)
 	if err = os.MkdirAll(basepath, DefaultDirMode); err != nil {
 		return
@@ -63,9 +63,5 @@ func (f *FSWriteAgent) Close() (err error) {
 	}
 	// TODO: increse Level when necessary
 
-	return nil
-}
-
-func (f *FSWriteAgent) Score() tall.HexBytes {
-	return f.score
+	return
 }
