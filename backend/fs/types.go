@@ -39,10 +39,21 @@ type FSWriteAgent struct {
 	pr       io.ReadCloser
 }
 
+// implements tall.Reader
 type FSReadAgent struct {
 	*os.File
 }
 
+func (f *FSReadAgent) Score() tall.HexBytes {
+	b := new(tall.HexBytes)
+	if err := b.FromString(f.File.Name()); err != nil {
+		panic(err)
+	} else {
+		return *b
+	}
+}
+
+// implements tall.Writer
 func (f *FSWriteAgent) Write(data []byte) (int, error) {
 	return f.w.Write(data)
 }

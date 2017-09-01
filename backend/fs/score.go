@@ -3,7 +3,6 @@ package fs
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"github.com/jamesruan/tall"
 	"io"
 )
@@ -19,8 +18,9 @@ func ScoreFrom(r io.Reader) <-chan tall.HexBytes {
 		defer close(ch)
 		hash := sha256.New()
 		io.Copy(hash, r)
-		hexstring := hex.EncodeToString(hash.Sum(nil))
-		ch <- tall.HexBytes(hexstring)
+		hexstring := new(tall.HexBytes)
+		hexstring.FromBytes(hash.Sum(nil))
+		ch <- (*hexstring)
 	}()
 	return ch
 }

@@ -9,6 +9,7 @@ type Reader interface {
 	io.ReadSeeker
 	io.ReaderAt
 	io.Closer
+	Score() (score HexBytes)
 }
 
 type Writer interface {

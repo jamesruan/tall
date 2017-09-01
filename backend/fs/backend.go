@@ -2,6 +2,7 @@
 package fs
 
 import (
+	"fmt"
 	"github.com/jamesruan/tall"
 	"io"
 	"io/ioutil"
@@ -95,7 +96,7 @@ func (b *FSBackend) SetLogger(logger *log.Logger, debug bool) {
 
 func scoreToPath(score tall.HexBytes, level int) string {
 	block := 2
-	scoreleft := string(score)
+	scoreleft := score.String()
 	index := 0
 	arr := []string{}
 	for index < level {
@@ -104,21 +105,52 @@ func scoreToPath(score tall.HexBytes, level int) string {
 		arr = append(arr, v)
 		index += 1
 	}
-	arr = append(arr, string(score))
+	arr = append(arr, score.String())
 	return filepath.Join(arr...)
 }
 
-func getScoreAndWrite(f io.WriteCloser, r io.Reader) (tall.HexBytes, error) {
-	var err error
-	pr, pw := io.Pipe()
-	defer pr.Close()
-	defer pw.Close()
-	writer := io.MultiWriter(f, pw)
-
-	score := ScoreFrom(pr)
-
-	if _, err = io.Copy(writer, r); err != nil {
-		return "", err
+func Make(entry string, force bool) (err error) {
+	var path string
+	if force {
+		if err = os.RemoveAll(entry); err != nil {
+			return
+		}
+		fmt.Printf("old fs removed\n")
+	} else {
+		path = filepath.Join(entry, SUPERMATPATH)
+		if _, err = os.Stat(path); err == nil {
+			err = fmt.Errorf("found supermeta in %s, use -f to reformat\n", entry)
+			return
+		}
 	}
-	return <-score, err
+
+	paths := []string{
+		"",
+		JOURNALPATH,
+		TEMPPATH,
+		DATAPATH,
+		STATSPATH,
+	}
+	for _, suffix := range paths {
+		path := filepath.Join(entry, suffix)
+		fmt.Printf("creating %s\n", path)
+		err = os.MkdirAll(path, DefaultDirMode)
+		if err != nil {
+			return
+		}
+	}
+
+	path = filepath.Join(entry, SUPERMATPATH)
+	fmt.Printf("creating %s\n", path)
+	var file *os.File
+	file, err = os.Create(path)
+	defer file.Close()
+	sm := &SuperMeta{
+		Level: 1,
+	}
+	if err = sm.Store(file); err != nil {
+		os.RemoveAll(entry)
+		return
+	}
+	return
 }
