@@ -87,13 +87,6 @@ func (b *FSBackend) Has(score tall.HexBytes) (ok bool, err error) {
 	}
 }
 
-func (b *FSBackend) SetLogger(logger *log.Logger, debug bool) {
-	b.lock.Lock()
-	b.logger = logger
-	b.debug = debug
-	b.lock.Unlock()
-}
-
 func scoreToPath(score tall.HexBytes, level int) string {
 	block := 2
 	scoreleft := score.String()
