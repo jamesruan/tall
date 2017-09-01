@@ -16,6 +16,7 @@ import (
 type FSBackend struct {
 	entry  string
 	sm     *SuperMeta
+	smfile *os.File
 	logger *log.Logger
 	debug  bool
 	lock   *sync.Mutex
@@ -35,10 +36,12 @@ func New(entry string) (*FSBackend, error) {
 		return nil, err
 	}
 	be := &FSBackend{
-		entry: entry,
-		sm:    sm,
-		lock:  new(sync.Mutex),
+		entry:  entry,
+		sm:     sm,
+		smfile: supermetafile, // let GC helps Close it
+		lock:   new(sync.Mutex),
 	}
+
 	return be, nil
 }
 
@@ -91,12 +94,12 @@ func scoreToPath(score tall.HexBytes, level int) string {
 	block := 2
 	scoreleft := score.String()
 	index := 0
-	arr := []string{}
+	arr := []string{DATAPATH}
 	for index < level {
 		var v string
+		index += 1
 		v, scoreleft = scoreleft[:block*index], scoreleft[block*index:]
 		arr = append(arr, v)
-		index += 1
 	}
 	arr = append(arr, score.String())
 	return filepath.Join(arr...)

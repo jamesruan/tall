@@ -2,9 +2,7 @@ package fs
 
 import (
 	"github.com/jamesruan/tall"
-	"io"
 	"os"
-	"path/filepath"
 )
 
 const (
@@ -28,51 +26,4 @@ func (s *SuperMeta) Store(f *os.File) (err error) {
 
 func (s *SuperMeta) Load(f *os.File) (err error) {
 	return LoadStructFromFile(s, f)
-}
-
-type FSWriteAgent struct {
-	b        *FSBackend
-	sch      <-chan tall.HexBytes
-	tempfile *os.File
-	w        io.Writer
-	pw       io.WriteCloser
-	pr       io.ReadCloser
-}
-
-// implements tall.Reader
-type FSReadAgent struct {
-	*os.File
-}
-
-func (f *FSReadAgent) Score() tall.HexBytes {
-	b := new(tall.HexBytes)
-	if err := b.FromString(f.File.Name()); err != nil {
-		panic(err)
-	} else {
-		return *b
-	}
-}
-
-// implements tall.Writer
-func (f *FSWriteAgent) Write(data []byte) (int, error) {
-	return f.w.Write(data)
-}
-
-func (f *FSWriteAgent) Commit() (score tall.HexBytes, err error) {
-	defer f.tempfile.Close()
-	f.pw.Close()
-	f.pr.Close()
-
-	score = <-f.sch
-	path := filepath.Join(f.b.entry, scoreToPath(score, f.b.sm.Level))
-	basepath := filepath.Base(path)
-	if err = os.MkdirAll(basepath, DefaultDirMode); err != nil {
-		return
-	}
-	if err = os.Link(f.tempfile.Name(), path); err != nil {
-		return
-	}
-	// TODO: increse Level when necessary
-
-	return
 }
