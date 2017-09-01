@@ -23,7 +23,7 @@ func StoreStructToFile(s interface{}, f *os.File) (err error) {
 		a += n
 	}
 	if err = f.Truncate(int64(len(buf))); err != nil {
-		return err
+		return
 	}
 	return f.Sync()
 }
