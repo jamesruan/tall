@@ -2,7 +2,22 @@ package tall
 
 import (
 	"encoding/hex"
+	"io"
+	"os"
 )
+
+// implements http.File
+type File interface {
+	io.ReadSeeker
+	io.ReaderAt
+	io.Closer
+	Readdir(count int) ([]os.FileInfo, error)
+	Stat() (os.FileInfo, error)
+}
+
+type FileSystem interface {
+	Open(name string) (File, error) //implements http.FileSystem
+}
 
 // hex representation of bytes
 type HexBytes string
@@ -30,4 +45,9 @@ func (h HexBytes) Bytes() []byte {
 	} else {
 		return b
 	}
+}
+
+type DirInfo struct {
+	Entries []*FileStat
+	index   map[string]int // maps file name to index in FileStat
 }
