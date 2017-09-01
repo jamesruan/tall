@@ -42,13 +42,17 @@ func New(entry string) (*FSBackend, error) {
 	return be, nil
 }
 
+func (b *FSBackend) Score(d []byte) tall.HexBytes {
+	return Score(d)
+}
+
 // Store save file to a tempfile, calculate score for the data
 // and move to the file with the score as its name.
 // The path for the file is scattered according to SuperMeta.Level
 func (b *FSBackend) Store(data []byte) (score tall.HexBytes, err error) {
 	var agent *FSWriteAgent
 	r := bytes.NewBuffer(data)
-	if agent, err = b.NewWriteAgent(); err != nil {
+	if agent, err = b.newWriteAgent(); err != nil {
 		return
 	}
 
@@ -63,7 +67,7 @@ func (b *FSBackend) Store(data []byte) (score tall.HexBytes, err error) {
 	return score, nil
 }
 
-func (b *FSBackend) NewWriteAgent() (*FSWriteAgent, error) {
+func (b *FSBackend) newWriteAgent() (*FSWriteAgent, error) {
 	var tempfile *os.File
 	var err error
 
@@ -88,7 +92,7 @@ func (b *FSBackend) NewWriteAgent() (*FSWriteAgent, error) {
 func (b *FSBackend) Load(score tall.HexBytes) (data []byte, err error) {
 	buf := new(bytes.Buffer)
 	var r io.ReadCloser
-	r, err = b.Open(score)
+	r, err = b.open(score)
 	defer r.Close()
 	if _, err = io.Copy(buf, r); err != nil {
 		return nil, err
@@ -96,7 +100,7 @@ func (b *FSBackend) Load(score tall.HexBytes) (data []byte, err error) {
 	return buf.Bytes(), nil
 }
 
-func (b *FSBackend) Open(score tall.HexBytes) (*os.File, error) {
+func (b *FSBackend) open(score tall.HexBytes) (*os.File, error) {
 	var file *os.File
 	var err error
 	path := filepath.Join(b.entry, scoreToPath(score, b.sm.Level))
